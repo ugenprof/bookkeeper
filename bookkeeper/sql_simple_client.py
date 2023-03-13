@@ -8,11 +8,11 @@ from bookkeeper.models.budget import Budget
 from bookkeeper.repository.sqlite_repository import SQLiteRepository
 from bookkeeper.utils import read_tree
 
-cat_repo = SQLiteRepository[Category](db_file="data/simple-client-sql.db",  # type: ignore
+cat_repo = SQLiteRepository[Category](db_file="database/simple-client-sql.db",  # type: ignore
                                       cls=Category)
-exp_repo = SQLiteRepository[Expense](db_file="data/simple-client-sql.db",  # type: ignore
+exp_repo = SQLiteRepository[Expense](db_file="database/simple-client-sql.db",  # type: ignore
                                      cls=Expense)
-budget_repo = SQLiteRepository[Budget](db_file="data/simple-client-sql.db",  # type: ignore
+budget_repo = SQLiteRepository[Budget](db_file="database/simple-client-sql.db",  # type: ignore
                                        cls=Budget)
 
 # pylint: disable=duplicate-code

@@ -52,15 +52,15 @@ class Bookkeeper:
     def cat_checker(self, cat_name: str) -> None:
         """ Проверяет, что имя категории (cat_name) есть в репозитории """
         if cat_name not in [c.name for c in self.categories]:
-            raise ValueError(f'Категории "{cat_name}" не существует')
+            raise ValueError(f'Категории "{cat_name}" не существует в этой копьютерной симуляции')
 
     def add_category(self, name: str, parent: str | None) -> None:
         """ Добавляет категорию с названием name и названием родителя parent"""
         if name in [c.name for c in self.categories]:
-            raise ValueError(f'Категория "{name}" уже существует')
+            raise ValueError(f'Категория "{name}" уже существует в этой копьютерной симуляции')
         if parent is not None:
             if parent not in [c.name for c in self.categories]:
-                raise ValueError(f'Категории "{parent}" не существует')
+                raise ValueError(f'Категории "{parent}" не существует в этой копьютерной симуляции')
             parent_pk = self.category_rep.get_all(where={'name': parent})[0].pk
         else:
             parent_pk = None
@@ -73,13 +73,13 @@ class Bookkeeper:
                         new_parent: str | None) -> None:
         """ Изменяет имя и родителя категории """
         if cat_name not in [c.name for c in self.categories]:
-            raise ValueError(f'Категории "{cat_name}" не существует')
+            raise ValueError(f'Категории "{cat_name}" не существует в этой копьютерной симуляции')
         if new_name != cat_name:
             if new_name in [c.name for c in self.categories]:
-                raise ValueError(f'Категория "{new_name}" уже существует')
+                raise ValueError(f'Категория "{new_name}" уже существует в этой копьютерной симуляции')
         if new_parent is not None:
             if new_parent not in [c.name for c in self.categories]:
-                raise ValueError(f'Категории "{new_parent}" не существует')
+                raise ValueError(f'Категории "{new_parent}" не существует в этой копьютерной симуляции')
             parent_pk = self.category_rep.get_all(where={'name': new_parent})[0].pk
         else:
             parent_pk = None
@@ -94,7 +94,7 @@ class Bookkeeper:
         """ Удаляет категорию с названием cat_name """
         cat = self.category_rep.get_all(where={"name": cat_name})
         if len(cat) == 0:
-            raise ValueError(f'Категории "{cat_name}" не существует')
+            raise ValueError(f'Категории "{cat_name}" не существует в этой копьютерной симуляции')
         cat = cat[0]
         self.category_rep.delete(cat.pk)
         for child in self.category_rep.get_all(where={'parent': cat.pk}):
@@ -123,13 +123,12 @@ class Bookkeeper:
         try:
             amount_int = int(amount)
         except ValueError as err:
-            raise ValueError('Чем это Вы расплачивались?\n'
-                             + 'Введите сумму целым числом.') from err
+            raise ValueError('Наш магазин принимает только целые числа!') from err
         if amount_int <= 0:
-            raise ValueError('Удачная покупка! Записывать не буду.')
+            raise ValueError('Хошо придумали, но деньги не могут быть отрицательными!')
         cat = self.category_rep.get_all(where={"name": cat_name.lower()})
         if len(cat) == 0:
-            raise ValueError(f'Категории "{cat_name}" не существует')
+            raise ValueError(f'Категории "{cat_name}" не существует в этой копьютерной симуляции')
         cat = cat[0]
         new_exp = Expense(amount_int, cat.pk, comment=comment)
         self.expense_rep.add(new_exp)
@@ -147,18 +146,17 @@ class Bookkeeper:
             val_cat = new_val.lower()
             if val_cat not in [c.name for c in self.categories]:
                 self.view.set_expenses(self.expenses)
-                raise ValueError(f'Категории "{val_cat}" не существует')
+                raise ValueError(f'Категории "{val_cat}" не существует в этой копьютерной симуляции')
             val_cat = self.category_rep.get_all(where={'name': val_cat})[0].pk
             setattr(exp, attr, val_cat)
         elif attr == "amount":
             try:
                 val_amnt = int(new_val)
             except ValueError as err:
-                raise ValueError('Чем это Вы расплачивались?\n'
-                                 + 'Введите сумму целым числом.') from err
+                raise ValueError('Наш магазин принимает только целые числа!') from err
             if val_amnt <= 0:
                 self.view.set_expenses(self.expenses)
-                raise ValueError('Удачная покупка! Записывать не буду.')
+                raise ValueError('Хошо придумали, но деньги не могут быть отрицательными!')
             setattr(exp, attr, val_amnt)
         elif attr == "expense_date":
             try:
@@ -166,7 +164,7 @@ class Bookkeeper:
                     sep='\t', timespec='minutes')
             except ValueError as err:
                 self.view.set_expenses(self.expenses)
-                raise ValueError('Неправильный формат даты.') from err
+                raise ValueError('Кривая дата') from err
             setattr(exp, attr, val_date)
         else:
             setattr(exp, attr, new_val)
@@ -208,11 +206,10 @@ class Bookkeeper:
             new_limit_int = int(new_limit)
         except ValueError as err:
             self.update_budgets()
-            raise ValueError('Неправильный формат.\n'
-                             + 'Введите сумму целым числом.') from err
+            raise ValueError('Наш магазин принимает только целые числа!') from err
         if new_limit_int < 0:
             self.update_budgets()
-            raise ValueError('За этот период придется заработать.')
+            raise ValueError('Недостаточно золота, милорд')
         # Add
         if pk is None:
             budget = Budget(limitation=new_limit_int, period=period)

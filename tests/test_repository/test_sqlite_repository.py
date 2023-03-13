@@ -6,7 +6,7 @@ from bookkeeper.repository.sqlite_repository import SQLiteRepository
 from bookkeeper.repository.factory import repository_factory
 
 
-DB_FILE = "data/test_sqlrepo.db"
+DB_FILE = "database/test_sqlrepo.db"
 
 
 @pytest.fixture
