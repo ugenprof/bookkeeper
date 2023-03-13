@@ -1,4 +1,4 @@
-""""
+"""
 Простой тестовый скрипт для терминала
 """
 
@@ -8,9 +8,9 @@ from bookkeeper.models.budget import Budget
 from bookkeeper.repository.memory_repository import MemoryRepository
 from bookkeeper.utils import read_tree
 
-cat_repo = MemoryRepository[Category]()  
-exp_repo = MemoryRepository[Expense]()  
-budget_repo = MemoryRepository[Budget]()  
+cat_repo = MemoryRepository[Category]()  # type: ignore
+exp_repo = MemoryRepository[Expense]()  # type: ignore
+budget_repo = MemoryRepository[Budget]()  # type: ignore
 
 cats = '''
 продукты
@@ -24,17 +24,14 @@ cats = '''
 
 Category.create_from_tree(read_tree(cats), cat_repo)
 
-budget = Budget(period="day", 
-                limitation=1000, spent=0)
+budget = Budget(period="day", limitation=1000, spent=0)
 budget_repo.add(budget)
-budget = Budget(period="week", 
-                limitation=7000, spent=0)
+budget = Budget(period="week", limitation=7000, spent=0)
 budget_repo.add(budget)
-budget = Budget(period="month", 
-                limitation=30000, spent=0)
+budget = Budget(period="month", limitation=30000, spent=0)
 budget_repo.add(budget)
 
-
+# flake8: noqa
 while True:
     try:
         cmd = input('$> ')
@@ -53,7 +50,7 @@ while True:
         try:
             cat = cat_repo.get_all({'name': name})[0]
         except IndexError:
-            print(f'категория {name} не обнаружена')
+            print(f'категория {name} не найдена')
             continue
         exp = Expense(int(amount), cat.pk)
         exp_repo.add(exp)
