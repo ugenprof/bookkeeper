@@ -97,13 +97,11 @@ class Bookkeeper:
             raise ValueError(f'Категории "{cat_name}" не существует')
         cat = cat[0]
         self.category_rep.delete(cat.pk)
-        # меняет удаленную категорию на родителя (None если родителя нет)
         for child in self.category_rep.get_all(where={'parent': cat.pk}):
             child.parent = cat.parent
             self.category_rep.update(child)
         self.categories = self.category_rep.get_all()
         self.view.set_categories(self.categories)
-        # устанавливает None вместо удаленной категории
         for exp in self.expense_rep.get_all(where={'category': cat.pk}):
             exp.category = None
             self.expense_rep.update(exp)
@@ -199,13 +197,13 @@ class Bookkeeper:
         если pk == None (нет в репозитории)
         - изменяяет бюджет, если pk != None (есть в репозитории)
         """
-        # удаление
+        # delete
         if new_limit == "":
             if pk is not None:
                 self.budget_rep.delete(pk)
             self.update_budgets()
             return
-        # добавление/изменение
+        # Add/change
         try:
             new_limit_int = int(new_limit)
         except ValueError as err:
@@ -215,11 +213,11 @@ class Bookkeeper:
         if new_limit_int < 0:
             self.update_budgets()
             raise ValueError('За этот период придется заработать.')
-        # добавление
+        # Add
         if pk is None:
             budget = Budget(limitation=new_limit_int, period=period)
             self.budget_rep.add(budget)
-        # изменение
+        # change
         else:
             budget = self.budget_rep.get(pk)
             budget.limitation = new_limit_int
