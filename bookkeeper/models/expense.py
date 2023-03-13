@@ -23,4 +23,3 @@ class Expense:
     added_date: str = datetime.now().isoformat(sep='\t', timespec='minutes')
     comment: str = ''
     pk: int = 0
-

@@ -14,10 +14,10 @@ class MemoryRepository(AbstractRepository[T]):
     """
 
     def __init__(self) -> None:
-        self._container: dict[int, T] = {}
+        self._container: dict[int | None, T] = {}
         self._counter = count(1)
 
-    def add(self, obj: T) -> int:
+    def add(self, obj: T) -> int | None:
         if getattr(obj, 'pk', None) != 0:
             raise ValueError(f'trying to add object {obj} with filled `pk` attribute')
         pk = next(self._counter)
@@ -33,7 +33,7 @@ class MemoryRepository(AbstractRepository[T]):
             return list(self._container.values())
         return [obj for obj in self._container.values()
                 if all(getattr(obj, attr) == value for attr, value in where.items())]
-    
+
     def get_all_like(self, like: dict[str, str]) -> list[T]:
         return [obj for obj in self._container.values()
                 if all(value in getattr(obj, attr) for attr, value in like.items())]
