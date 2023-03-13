@@ -1,63 +1,66 @@
-from itertools import count
+"""
+Модуль описывает репозиторий, работающий в БД SQLite
+"""
+
 from typing import Any
+from inspect import get_annotations
 import sqlite3
 
 from bookkeeper.repository.abstract_repository import AbstractRepository, T
 
-from inspect import get_annotations
-    
 
 class SQLiteRepository(AbstractRepository[T]):
     """
     Репозиторий, работающий c базой данных SQLite.
     """
     db_file: str
-    obj_cls: type
     table_name: str
     fields: dict[str, Any]
-    
-    
+    obj_cls: type
+
     def __init__(self, db_file: str, cls: type) -> None:
         self.db_file = db_file
         self.table_name = cls.__name__.lower()
         self.fields = get_annotations(cls, eval_str=True)
         self.fields.pop('pk')
-        self.new_obj = cls
+        self.obj_cls = cls
 
-    
-    def add(self, obj: T) -> int:
+    def add(self, obj: T) -> int | None:
+        if getattr(obj, 'pk', None) != 0:
+            raise ValueError(f'trying to add object {obj} with filled `pk` attribute')
         names = ', '.join(self.fields.keys())
-        p = ', '.join("?" * len(self.fields))
-        values = [getattr(obj, x) for x in self.fields]
+        questions = ', '.join("?" * len(self.fields))
+        values = [getattr(obj, f) for f in self.fields]
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
             cur.execute('PRAGMA foreign_keys = ON')
-            cur.execute(f'INSERT INTO {self.table_name} ({names}) VALUES ({p})',
-                        values )
+            cur.execute(
+                f'INSERT INTO {self.table_name} ({names}) VALUES({questions})',
+                values
+            )
             obj.pk = cur.lastrowid
         con.close()
         return obj.pk
-    
-    def _row2obj(self, row: tuple[Any], pk: int ) -> T:
-        '''Преобразование строки БД в obj'''
-        obj = self.new_obj(**dict(zip(self.fields, row)))
-        obj.pk = pk
-        return obj
+
+    def _row2obj(self, rowid: int, row: tuple[Any]) -> T:
+        """ Конвертирует строку из БД в объект типа Т """
+        kwargs = dict(zip(self.fields, row))
+        obj = self.obj_cls(**kwargs)
+        obj.pk = rowid
+        return obj  # type: ignore
 
     def get(self, pk: int) -> T | None:
-        names = ', '.join(self.fields.keys())
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
-            cur.execute('PRAGMA foreign_keys = ON')
             row = cur.execute(
-                f'SELECT * FROM {self.table_name} WHERE ROWID = {pk}'
-                              ).fetchone()
-        con.close
-        if row is None: return(None)
-        return self._row2obj(row, pk)
-
-            
-
+                f'SELECT * FROM {self.table_name} '
+                + f'WHERE ROWID=={pk}'
+            ).fetchone()
+        con.close()
+        if row is None:
+            return None
+        obj = self._row2obj(pk, row)
+        return obj
 
     def get_all(self, where: dict[str, Any] | None = None) -> list[T]:
         with sqlite3.connect(self.db_file) as con:
@@ -75,31 +78,33 @@ class SQLiteRepository(AbstractRepository[T]):
                 ).fetchall()
         con.close()
         return [self._row2obj(r[0], r[1:]) for r in rows]
-    
-    
-    
+
     def get_all_like(self, like: dict[str, str]) -> list[T]:
         values = [f"%{v}%" for v in like.values()]
         where = dict(zip(like.keys(), values))
         return self.get_all(where=where)
-    
-    
+
     def update(self, obj: T) -> None:
-        if obj.pk == 0:
-            raise ValueError('attempt to update object with unknown primary key')
-        
-        names = ', '.join(f'{i} = ?' for i in self.fields.keys())
-        values = [getattr(obj, x) for x in self.fields]
+        fields = ", ".join([f"{f}=?" for f in self.fields.keys()])
+        values = [getattr(obj, f) for f in self.fields]
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
-            cur.execute('PRAGMA foreign_keys = ON') 
-            cur.execute(f'UPDATE {self.table_name} SET ({names}) WHERE ROWID = {obj.pk}',
-                         values)   
-        con.close()   
+            cur.execute(
+                f'UPDATE {self.table_name} SET {fields} '
+                + f'WHERE ROWID=={obj.pk}',
+                values
+            )
+            if cur.rowcount == 0:
+                raise ValueError('attempt to update object with unknown primary key')
+        con.close()
 
     def delete(self, pk: int) -> None:
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
-            cur.execute('PRAGMA foreign_keys = ON') 
-            cur.execute(f'DELETE FROM {self.table_name} WHERE ROWID = {pk}')
-        cur.close()
+            cur.execute(
+                f'DELETE FROM  {self.table_name} '
+                + f'WHERE ROWID=={pk}'
+            )
+            if cur.rowcount == 0:
+                raise ValueError('attempt to delete object with unknown primary key')
+        con.close()

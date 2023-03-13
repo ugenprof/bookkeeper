@@ -3,17 +3,20 @@ import sqlite3
 from dataclasses import dataclass
 
 from bookkeeper.repository.sqlite_repository import SQLiteRepository
+from bookkeeper.repository.factory import repository_factory
 
-DB_FILE = "database/..."
+
+DB_FILE = "data/test_sqlrepo.db"
+
 
 @pytest.fixture
 def create_bd():
     with sqlite3.connect(DB_FILE) as con:
         cur = con.cursor()
-        cur.execute(f"DROP TABLE custom")
+        cur.execute("DROP TABLE custom")
     with sqlite3.connect(DB_FILE) as con:
         cur = con.cursor()
-        cur.execute(f"CREATE TABLE custom(f1, f2)")
+        cur.execute("CREATE TABLE custom(f1, f2)")
     con.close()
 
 
@@ -41,22 +44,22 @@ def test_row2obj(repo):
 
 
 def test_crud(repo, custom_class):
-
+    # create
     obj_add = custom_class(f1=1, f2="test_crud")
     pk = repo.add(obj_add)
     assert pk == obj_add.pk
-
+    # read
     obj_get = repo.get(pk)
     assert obj_get is not None
     assert obj_get.pk == obj_add.pk
     assert obj_get.f1 == obj_add.f1
     assert obj_get.f2 == obj_add.f2
-
+    # update
     obj_upd = custom_class(f1=11, f2="test_crud_upd", pk=pk)
     repo.update(obj_upd)
     obj_get = repo.get(pk)
     assert obj_get == obj_upd
-
+    # delete
     repo.delete(pk)
     assert repo.get(pk) is None
 
@@ -99,6 +102,7 @@ def test_get_all(repo, custom_class):
         repo.add(o)
     assert objects == repo.get_all()
 
+
 def test_get_all_with_condition(repo, custom_class):
     objects = []
     for i in range(5):
@@ -110,6 +114,7 @@ def test_get_all_with_condition(repo, custom_class):
     assert [objects[0]] == repo.get_all({'f1': 0})
     assert objects == repo.get_all({'f2': 'test'})
 
+
 def test_get_all_like(repo, custom_class):
     objects = []
     for i in range(5):
@@ -120,3 +125,9 @@ def test_get_all_like(repo, custom_class):
         objects.append(o)
     assert [objects[0]] == repo.get_all_like({'f1': '0'})
     assert objects == repo.get_all_like({'f2': 'test'})
+
+
+def test_factory(custom_class, create_bd):
+    repo_gen = repository_factory(SQLiteRepository, db_file=DB_FILE)
+    rep = repo_gen(custom_class)
+    test_crud(rep, custom_class)
