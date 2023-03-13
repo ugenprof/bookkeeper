@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from bookkeeper.repository.sqlite_repository import SQLiteRepository
 
-DB_FILE = "database/test_sqlrepo.db"
+DB_FILE = "database/..."
 
 @pytest.fixture
 def create_bd():
